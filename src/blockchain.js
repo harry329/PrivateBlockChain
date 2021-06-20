@@ -74,12 +74,17 @@ class Blockchain {
                    block.previousBlockHash = self.chain[self.height].hash;
                }
                block.height = self.height + 1;
-               block.hash = SHA256(JSON.stringify(block));
+               block.hash = SHA256(JSON.stringify(block)).toString();
                self.height = block.height;
-               self.chain.push(block);
-               resolve(true);
-           }catch (e) {
-               reject('something went wrong')
+               const validatedValues = await self.validateChain();
+               if(validatedValues.length > 0) {
+                   reject('BlockChain is compromised');
+               } else {
+                   self.chain.push(block);
+                   resolve(block);
+               }
+           } catch (e) {
+               reject('something went wrong');
            }
         });
     }
@@ -146,9 +151,9 @@ class Blockchain {
     getBlockByHash(hash) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let blocks = self.chain.filter(block => block.hash === hash);
-            if(blocks.length > 0) {
-                resolve(blocks[0])
+            let block = self.chain.find(block => block.hash === hash);
+            if(block) {
+                resolve(block)
             } else {
                 reject('No block found')
             }
@@ -208,23 +213,23 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            self.chain.forEach(async (block, index) => {
-                if (index === 0) {
-                    const validate = await block.validate();
+            for(const block of self.chain) {
+                console.log(block);
+                const validate = await block.validate();
+                if (block.height === 0) {
                     if( validate === true && block.previousBlockHash === null) {
-                        errorLog.push('No error')
+                        // errorLog.push('No error')
                     } else  {
-                        errorLog.push('Error')
+                        errorLog.push(`Block ${block.height} is invalid`);
                     }
                 } else  {
-                    const validate = await block.validate();
-                    if( validate === true && block.previousBlockHash === self.chain[index-1].hash) {
-                        errorLog.push('No error')
+                    if( validate === true && block.previousBlockHash === self.chain[block.height-1].hash) {
+                        // errorLog.push('No error')
                     } else  {
-                        errorLog.push('Error')
+                        errorLog.push(`Block ${block.height} is invalid`);
                     }
                 }
-            })
+            }
             resolve(errorLog)
         });
     }

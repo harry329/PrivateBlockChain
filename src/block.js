@@ -45,11 +45,13 @@ class Block {
             // Returning the Block is not valid
 
             const previousCalculatedHash = self.hash;
-            const newlyCalculatedHash = SHA256(JSON.stringify(self))
+            self.hash = null;
+            const newlyCalculatedHash = SHA256(JSON.stringify(self)).toString();
+            self.hash = newlyCalculatedHash;
             if(previousCalculatedHash === newlyCalculatedHash) {
                 resolve(true)
             } else {
-                reject(false)
+                resolve(false)
             }
 
             // Returning the Block is valid
